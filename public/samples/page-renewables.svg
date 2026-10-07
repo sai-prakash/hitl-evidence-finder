@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="820" viewBox="0 0 640 820">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f7f4ee"/>
+      <stop offset="100%" stop-color="#efe8dc"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <style>
+      .title { font: 700 22px Inter, ui-sans-serif, system-ui, sans-serif; fill: #1a1f2c; }
+      .sub { font: 500 12px Inter, ui-sans-serif, system-ui, sans-serif; fill: #5c667a; }
+      .body { font: 400 13.5px "IBM Plex Serif", Georgia, serif; fill: #2a3140; }
+      .meta { font: 500 11px Inter, ui-sans-serif, system-ui, sans-serif; fill: #7a8499; }
+      .badge { font: 600 10px Inter, ui-sans-serif, system-ui, sans-serif; fill: #3d6fff; }
+    </style>
+  </defs>
+  <rect width="640" height="820" fill="#0b0d12"/>
+  <rect x="28" y="28" width="584" height="764" rx="8" fill="url(#paper)" filter="url(#shadow)"/>
+  <rect x="28" y="28" width="6" height="764" fill="#5b8cff"/>
+  <text x="48" y="64" class="badge">PDF PAGE · DEMO</text>
+  <text x="48" y="92" class="title">Energy Outlook · Renewables Capacity</text>
+  <text x="48" y="112" class="sub">Demo corpus · generated summary for retrieval demos</text>
+  <line x1="48" y1="124" x2="580" y2="124" stroke="#d9d0c0" stroke-width="1"/>
+  <text x="48" y="118" class="body">Global renewable electricity capacity expanded rapidly after 2015, driven</text>
+<text x="48" y="140" class="body">by utility-scale solar photovoltaics and onshore wind. By the early 2020s,</text>
+<text x="48" y="162" class="body">annual additions routinely exceeded those of fossil generation in many</text>
+<text x="48" y="184" class="body">markets, and cumulative renewable capacity roughly doubled versus mid-2010s</text>
+<text x="48" y="206" class="body">baselines in widely cited energy-agency tallies.</text>
+<text x="48" y="242" class="body">Cost declines, auction design, and grid interconnection rules shaped where</text>
+<text x="48" y="264" class="body">capacity landed. Storage and transmission remain bottlenecks for firming</text>
+<text x="48" y="286" class="body">variable output; policy and permitting often dominate deployment speed.</text>
+<text x="48" y="322" class="body">This page is synthetic demo text for on-device embedding search — numbers</text>
+<text x="48" y="344" class="body">illustrate claim–evidence matching, not live statistics.</text>
+  <line x1="48" y1="760" x2="580" y2="760" stroke="#d9d0c0" stroke-width="1"/>
+  <text x="48" y="780" class="meta">Page 2 · HITL Evidence Finder sample · synthetic demo document</text>
+</svg>
