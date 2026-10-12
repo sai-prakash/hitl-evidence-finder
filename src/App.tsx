@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import './App.css';
-import { Header, LivePanel, PrivacyNote, pct, type LiveState } from './components/Chrome';
-import { friendlyError, loadEmbedder, MODEL_ID } from './lib/embedder';
+import { Header, LivePanel, PrivacyNote, liveError, pct, useAutoResume, type LiveState } from './components/Chrome';
+import { friendlyError } from './lib/errors';
+import { MODEL_ID } from './lib/model';
 import { CLAIMS, EVIDENCE_PAGES } from './lib/samples';
-import { findEvidenceForClaim, loadPages, pageById, type EvidenceHit } from './lib/search';
+import { pageById, type EvidenceHit } from './lib/pages';
+
+// Model code (Transformers.js + ONNX Runtime) loads only when you opt in.
+const liveMod = () => import('./lib/search');
 import { appendAudit, clearAuditLog, formatAuditTime, loadAuditLog, type AuditEntry } from './lib/audit';
 import examplesData from './data/examples.json';
 
@@ -32,20 +36,22 @@ export default function App() {
   const startLive = async () => {
     setLive({ kind: 'loading', progress: null });
     try {
+      setLive({ kind: 'loading', progress: null, step: 'Loading the model code…' });
+      const { loadPages, loadEmbedder } = await liveMod();
       await loadPages();
       const info = await loadEmbedder((p) => setLive({ kind: 'loading', progress: p }));
       setLive({ kind: 'ready', device: info.device === 'webgpu' ? 'GPU' : 'CPU' });
     } catch (e) {
-      console.error(e);
-      setLive({ kind: 'error', message: friendlyError(e) });
+      setLive(liveError(e));
     }
   };
+  useAutoResume(() => void startLive());
 
   const checkOwn = async () => {
     if (!own.trim()) return;
     setBusy(true);
     try {
-      const hits = await findEvidenceForClaim(own);
+      const hits = await (await liveMod()).findEvidenceForClaim(own);
       setCur({ claimId: null, text: own.trim(), hits, source: 'live' });
       setShowKey(false);
       setErr(null);

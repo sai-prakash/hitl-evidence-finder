@@ -1,12 +1,11 @@
 import { cosineSimilarity, embedText } from './embedder';
-import { EVIDENCE_PAGES, claimQueryText, type EvidencePage } from './samples';
+import { claimQueryText } from './samples';
+import { byId, type EvidenceHit } from './pages';
+export { loadEmbedder } from './embedder';
 
-export type EvidenceHit = { page: EvidencePage; score: number };
 
 type Entry = { id: string; text: number[]; image: number[] };
 let pages: Entry[] | null = null;
-const byId = new Map(EVIDENCE_PAGES.map((p) => [p.id, p]));
-export const pageById = (id: string) => byId.get(id)!;
 
 /** Page embeddings were computed at build time with the same model (scripts/precompute.mjs). */
 export async function loadPages(): Promise<void> {
