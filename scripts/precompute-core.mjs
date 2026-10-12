@@ -5,7 +5,9 @@ import sharp from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const MODEL_ID = 'onnx-community/embeddinggemma-2-ONNX';
+import { MODEL_ID } from '../src/lib/model.ts';
+export { MODEL_ID };
+export { cosineSimilarity as cos } from '../src/lib/scoring.ts';
 export const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 
 let proc, model;
@@ -26,11 +28,6 @@ export async function embedSvg(publicSrc) {
     .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   return emb(null, new RawImage(new Uint8ClampedArray(data), info.width, info.height, 4));
 }
-export function cos(a, b) {
-  let d = 0, x = 0, y = 0;
-  for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; x += a[i] ** 2; y += b[i] ** 2; }
-  return d / Math.sqrt(x * y);
-}
 export const round = (v) => v.map((n) => +n.toFixed(5));
 export function meta() {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'node_modules/@huggingface/transformers/package.json'), 'utf8'));
@@ -42,15 +39,7 @@ export function write(rel, obj) {
   fs.writeFileSync(p, JSON.stringify(obj));
   console.log('wrote', rel, (fs.statSync(p).size / 1024).toFixed(0) + 'KB');
 }
-// Load a TS data module's exported arrays without a TS toolchain.
+// Node 24 supports erasable TypeScript directly.
 export async function importTs(rel) {
-  const src = fs.readFileSync(path.join(ROOT, rel), 'utf8')
-    .replace(/^import type .*$/gm, '')
-    .replace(/export type [\s\S]*?\n};\n/g, '')
-    .replace(/: [A-Za-z]+\[\]( =)/g, '$1')
-    .replace(/\(([a-z]+): [A-Za-z]+\)(: string)?/g, '($1)')
-    .replace(/\(([a-z]+): string\)(: string)?/g, '($1)');
-  const tmp = path.join(ROOT, 'scripts', '.tmp-' + path.basename(rel, '.ts') + '.mjs');
-  fs.writeFileSync(tmp, src);
-  try { return await import(tmp + '?' + Date.now()); } finally { fs.unlinkSync(tmp); }
+  return import(path.join(ROOT, rel));
 }

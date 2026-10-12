@@ -1,3 +1,4 @@
+import { validateUpload, downscaledDimensions } from './image-limits';
 import { RawImage, load_image } from '@huggingface/transformers';
 
 /** True when MIME or URL path indicates SVG (createImageBitmap cannot decode SVG). */
@@ -49,11 +50,12 @@ function drawToCanvas(
   height: number,
 ): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  const size = downscaledDimensions(width, height);
+  canvas.width = size.width;
+  canvas.height = size.height;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) throw new Error('Could not get 2D canvas context');
-  ctx.drawImage(img, 0, 0, width, height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   return canvas;
 }
 
@@ -85,13 +87,16 @@ function decodeError(err: unknown, hint: string): Error {
 export async function loadImageForEmbedding(
   input: string | Blob,
 ): Promise<RawImage> {
+  if (typeof input !== 'string') validateUpload(input);
   try {
     if (typeof input === 'string') {
       if (isSvgSource(input)) {
         return await rasterizeViaHtmlImage(input);
       }
       try {
-        return await load_image(input);
+        const image = await load_image(input);
+        const size = downscaledDimensions(image.width, image.height);
+        return size.width === image.width && size.height === image.height ? image : await image.resize(size.width, size.height);
       } catch (err) {
         console.warn(
           '[image] load_image failed; falling back to HTMLImageElement path',
@@ -115,7 +120,9 @@ export async function loadImageForEmbedding(
     }
 
     try {
-      return await load_image(input);
+      const image = await load_image(input);
+        const size = downscaledDimensions(image.width, image.height);
+        return size.width === image.width && size.height === image.height ? image : await image.resize(size.width, size.height);
     } catch (err) {
       console.warn(
         '[image] createImageBitmap path failed; falling back to HTMLImageElement',

@@ -51,10 +51,7 @@ export function PrivacyNote() {
   );
 }
 
-// Measured transfer sizes for model files (text model + vision encoder + tokenizer), audio skipped.
-const SIZE_CPU = 'about 560 MB';
-const SIZE_GPU = 'about 290 MB';
-
+// TODO(orchestrator): measure text-only model transfer sizes after downloading model files.
 export type LiveState =
   | { kind: 'idle' }
   | { kind: 'loading'; progress: EmbedderProgress | null; step?: string }
@@ -70,14 +67,13 @@ export function LivePanel(props: {
   useEffect(() => {
     void detectWebGPU().then(setGpu);
   }, []);
-  const size = gpu ? SIZE_GPU : SIZE_CPU;
   const s = props.state;
   return (
     <section className="live" aria-live="polite">
       {s.kind === 'idle' && (
         <>
           <button className="btn primary" onClick={props.onStart} data-testid="run-live">
-            Run the model in your browser ({size}, one-time)
+            Run the model in your browser (one-time download)
           </button>
           <p className="muted small">
             {gpu === false

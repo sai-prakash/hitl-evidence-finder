@@ -27,7 +27,7 @@ export function loadAuditLog(): AuditEntry[] {
 }
 
 export function saveAuditLog(entries: AuditEntry[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { /* Storage may be full or unavailable. */ }
 }
 
 export function appendAudit(entry: Omit<AuditEntry, 'id' | 'at'>): AuditEntry[] {
@@ -42,7 +42,7 @@ export function appendAudit(entry: Omit<AuditEntry, 'id' | 'at'>): AuditEntry[] 
 }
 
 export function clearAuditLog(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* Storage may be unavailable. */ }
 }
 
 export function formatAuditTime(iso: string): string {

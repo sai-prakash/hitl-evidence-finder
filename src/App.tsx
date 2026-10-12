@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import './App.css';
 import { Header, LivePanel, PrivacyNote, liveError, pct, useAutoResume, type LiveState } from './components/Chrome';
 import { friendlyError } from './lib/errors';
@@ -16,7 +16,7 @@ type Current = { claimId: string | null; text: string; hits: EvidenceHit[]; sour
 function exampleFor(claimId: string): Current {
   const c = CLAIMS.find((x) => x.id === claimId)!;
   const ex = examplesData.examples.find((e) => e.claimId === claimId)!;
-  return { claimId, text: c.text, source: 'example', hits: ex.results.map((r) => ({ page: pageById(r.id), score: r.score })) };
+  return { claimId, text: c.text, source: 'example', hits: ex.results.map((r) => ({ page: pageById(r.id), score: r.score, bestSentenceIndex: (r as { bestSentenceIndex?: number }).bestSentenceIndex ?? null })) };
 }
 
 const TONE_LABEL = { supported: 'supported', contested: 'contested', misleading: 'misleading' } as const;
@@ -29,6 +29,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [log, setLog] = useState<AuditEntry[]>(() => loadAuditLog());
+  const generation = useRef(0);
+  const invalidate = () => { generation.current++; setBusy(false); setErr(null); };
   const ready = live.kind === 'ready';
   const claim = CLAIMS.find((c) => c.id === cur.claimId);
   const top = cur.hits[0];
@@ -49,16 +51,20 @@ export default function App() {
 
   const checkOwn = async () => {
     if (!own.trim()) return;
+    const request = ++generation.current;
+    const text = own.trim();
+    setErr(null);
     setBusy(true);
     try {
-      const hits = await (await liveMod()).findEvidenceForClaim(own);
-      setCur({ claimId: null, text: own.trim(), hits, source: 'live' });
+      const hits = await (await liveMod()).findEvidenceForClaim(text);
+      if (request !== generation.current) return;
+      setCur({ claimId: null, text, hits, source: 'live' });
       setShowKey(false);
       setErr(null);
     } catch (e) {
-      setErr(friendlyError(e));
+      if (request === generation.current) setErr(friendlyError(e));
     } finally {
-      setBusy(false);
+      if (request === generation.current) setBusy(false);
     }
   };
 
@@ -79,7 +85,7 @@ export default function App() {
       <h2 className="section-title">1. Pick a claim (instant, no download)</h2>
       <div className="chips" data-testid="examples">
         {CLAIMS.map((c) => (
-          <button key={c.id} className="chip" aria-pressed={cur.claimId === c.id} onClick={() => { setCur(exampleFor(c.id)); setShowKey(false); }}>
+          <button key={c.id} className="chip" aria-pressed={cur.claimId === c.id} onClick={() => { invalidate(); setCur(exampleFor(c.id)); setShowKey(false); }}>
             {c.text}
           </button>
         ))}
@@ -87,7 +93,7 @@ export default function App() {
 
       <LivePanel state={live} onStart={startLive} readyText="Write your own claim below." />
       <div className="row">
-        <input type="text" data-testid="query" value={own} disabled={!ready} onChange={(e) => setOwn(e.target.value)}
+        <input type="text" data-testid="query" value={own} disabled={!ready} onChange={(e) => { invalidate(); setOwn(e.target.value); }}
           onKeyDown={(e) => e.key === 'Enter' && void checkOwn()}
           placeholder={ready ? 'Type a claim to check against the pages' : 'Load the model above to check your own claim'} />
         <button className="btn" disabled={!ready || busy} onClick={() => void checkOwn()}>{busy ? 'Checking…' : 'Find evidence'}</button>
