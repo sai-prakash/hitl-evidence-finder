@@ -23,15 +23,15 @@
   <text x="48" y="92" class="title">Climate Brief · Arctic Sea Ice</text>
   <text x="48" y="112" class="sub">Demo corpus · public-domain style science summary</text>
   <line x1="48" y1="124" x2="580" y2="124" stroke="#d9d0c0" stroke-width="1"/>
-  <text x="48" y="118" class="body">Satellite observations since 1979 show a long-term decline in Arctic</text>
-<text x="48" y="140" class="body">September sea-ice extent of approximately 13% per decade relative to the</text>
-<text x="48" y="162" class="body">1981–2010 mean. Multi-year ice has thinned substantially, and the ice-free</text>
-<text x="48" y="184" class="body">season lengthens as melt onset advances and freeze-up delays.</text>
-<text x="48" y="220" class="body">Extent alone understates mass loss: ice thickness and volume have fallen</text>
-<text x="48" y="242" class="body">faster than area in many assessments. Regional variability remains large,</text>
-<text x="48" y="264" class="body">but the multi-decadal trend is robust across independent retrievals.</text>
-<text x="48" y="300" class="body">Figure note (demo): schematic extent curve omitted; treat this page as a</text>
-<text x="48" y="322" class="body">synthetic PDF raster for embedding retrieval demos only.</text>
+  <text x="48" y="150" class="body">Satellite observations since 1979 show a long-term decline in Arctic</text>
+  <text x="48" y="172" class="body">September sea-ice extent of approximately 13% per decade relative to the</text>
+  <text x="48" y="194" class="body">1981–2010 mean. Multi-year ice has thinned substantially, and the ice-free</text>
+  <text x="48" y="216" class="body">season lengthens as melt onset advances and freeze-up delays.</text>
+  <text x="48" y="252" class="body">Extent alone understates mass loss: ice thickness and volume have fallen</text>
+  <text x="48" y="274" class="body">faster than area in many assessments. Regional variability remains large,</text>
+  <text x="48" y="296" class="body">but the multi-decadal trend is robust across independent retrievals.</text>
+  <text x="48" y="332" class="body">Figure note (demo): schematic extent curve omitted; treat this page as a</text>
+  <text x="48" y="354" class="body">synthetic PDF raster for embedding retrieval demos only.</text>
   <line x1="48" y1="760" x2="580" y2="760" stroke="#d9d0c0" stroke-width="1"/>
   <text x="48" y="780" class="meta">Page 1 · HITL Evidence Finder sample · not an official agency report</text>
 </svg>

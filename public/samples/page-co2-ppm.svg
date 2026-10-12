@@ -23,15 +23,15 @@
   <text x="48" y="92" class="title">Atmosphere · Carbon Dioxide</text>
   <text x="48" y="112" class="sub">Demo corpus · Mauna Loa–style narrative for demos</text>
   <line x1="48" y1="124" x2="580" y2="124" stroke="#d9d0c0" stroke-width="1"/>
-  <text x="48" y="118" class="body">Continuous in-situ measurements of atmospheric carbon dioxide show a clear</text>
-<text x="48" y="140" class="body">seasonal cycle superimposed on a rising multi-decade trend. Recent annual</text>
-<text x="48" y="162" class="body">means at reference observatories have exceeded 420 parts per million (ppm),</text>
-<text x="48" y="184" class="body">well above pre-industrial levels near 280 ppm.</text>
-<text x="48" y="220" class="body">The growth rate varies year to year with ENSO and land-biosphere fluxes,</text>
-<text x="48" y="242" class="body">but the long-term increase tracks cumulative fossil and land-use emissions.</text>
-<text x="48" y="264" class="body">Independent flask networks and satellite retrievals corroborate the surface</text>
-<text x="48" y="286" class="body">record within stated uncertainties.</text>
-<text x="48" y="322" class="body">Use this page only as a retrieval target in the HITL Evidence Finder demo.</text>
+  <text x="48" y="150" class="body">Continuous in-situ measurements of atmospheric carbon dioxide show a clear</text>
+  <text x="48" y="172" class="body">seasonal cycle superimposed on a rising multi-decade trend. Recent annual</text>
+  <text x="48" y="194" class="body">means at reference observatories have exceeded 420 parts per million (ppm),</text>
+  <text x="48" y="216" class="body">well above pre-industrial levels near 280 ppm.</text>
+  <text x="48" y="252" class="body">The growth rate varies year to year with ENSO and land-biosphere fluxes,</text>
+  <text x="48" y="274" class="body">but the long-term increase tracks cumulative fossil and land-use emissions.</text>
+  <text x="48" y="296" class="body">Independent flask networks and satellite retrievals corroborate the surface</text>
+  <text x="48" y="318" class="body">record within stated uncertainties.</text>
+  <text x="48" y="354" class="body">Use this page only as a retrieval target in the HITL Evidence Finder demo.</text>
   <line x1="48" y1="760" x2="580" y2="760" stroke="#d9d0c0" stroke-width="1"/>
   <text x="48" y="780" class="meta">Page 3 · HITL Evidence Finder sample · synthetic demo document</text>
 </svg>

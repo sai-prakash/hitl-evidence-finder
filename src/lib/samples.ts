@@ -78,7 +78,7 @@ export const CLAIMS: Claim[] = [
   },
   {
     id: 'claim-coal-vs-solar',
-    text: 'Utility-scale solar and onshore wind drove most of the post-2015 surge in renewable electricity capacity additions.',
+    text: 'Utility-scale solar and onshore wind drove the post-2015 expansion of renewable electricity capacity.',
     expectedPageId: 'page-renewables',
     tone: 'supported',
   },

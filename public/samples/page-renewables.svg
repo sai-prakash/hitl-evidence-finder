@@ -23,16 +23,16 @@
   <text x="48" y="92" class="title">Energy Outlook · Renewables Capacity</text>
   <text x="48" y="112" class="sub">Demo corpus · generated summary for retrieval demos</text>
   <line x1="48" y1="124" x2="580" y2="124" stroke="#d9d0c0" stroke-width="1"/>
-  <text x="48" y="118" class="body">Global renewable electricity capacity expanded rapidly after 2015, driven</text>
-<text x="48" y="140" class="body">by utility-scale solar photovoltaics and onshore wind. By the early 2020s,</text>
-<text x="48" y="162" class="body">annual additions routinely exceeded those of fossil generation in many</text>
-<text x="48" y="184" class="body">markets, and cumulative renewable capacity roughly doubled versus mid-2010s</text>
-<text x="48" y="206" class="body">baselines in widely cited energy-agency tallies.</text>
-<text x="48" y="242" class="body">Cost declines, auction design, and grid interconnection rules shaped where</text>
-<text x="48" y="264" class="body">capacity landed. Storage and transmission remain bottlenecks for firming</text>
-<text x="48" y="286" class="body">variable output; policy and permitting often dominate deployment speed.</text>
-<text x="48" y="322" class="body">This page is synthetic demo text for on-device embedding search — numbers</text>
-<text x="48" y="344" class="body">illustrate claim–evidence matching, not live statistics.</text>
+  <text x="48" y="150" class="body">Global renewable electricity capacity expanded rapidly after 2015, driven</text>
+  <text x="48" y="172" class="body">by utility-scale solar photovoltaics and onshore wind. By the early 2020s,</text>
+  <text x="48" y="194" class="body">annual additions routinely exceeded those of fossil generation in many</text>
+  <text x="48" y="216" class="body">markets, and cumulative renewable capacity roughly doubled versus mid-2010s</text>
+  <text x="48" y="238" class="body">baselines in widely cited energy-agency tallies.</text>
+  <text x="48" y="274" class="body">Cost declines, auction design, and grid interconnection rules shaped where</text>
+  <text x="48" y="296" class="body">capacity landed. Storage and transmission remain bottlenecks for firming</text>
+  <text x="48" y="318" class="body">variable output; policy and permitting often dominate deployment speed.</text>
+  <text x="48" y="354" class="body">This page is synthetic demo text for on-device embedding search — numbers</text>
+  <text x="48" y="376" class="body">illustrate claim–evidence matching, not live statistics.</text>
   <line x1="48" y1="760" x2="580" y2="760" stroke="#d9d0c0" stroke-width="1"/>
   <text x="48" y="780" class="meta">Page 2 · HITL Evidence Finder sample · synthetic demo document</text>
 </svg>

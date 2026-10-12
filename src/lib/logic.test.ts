@@ -2,7 +2,8 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 import { cosineSimilarity, fusionScore, rankPages, meetsThreshold } from './scoring';
 import { splitSentences, bestSentenceIndex } from './passages';
 import { MAX_UPLOAD_BYTES, validateUpload, downscaledDimensions } from './image-limits';
-import { saveAuditLog, clearAuditLog, appendAudit } from './audit';
+import { saveAuditLog, clearAuditLog, appendAudit, judgmentsFor } from './audit';
+import { expectedRelation } from './review';
 
 afterEach(() => vi.unstubAllGlobals());
 describe('retrieval logic', () => {
@@ -45,6 +46,28 @@ describe('upload limits', () => {
     expect(downscaledDimensions(4096, 2048)).toEqual({ width: 2048, height: 1024 });
     expect(downscaledDimensions(100, 200)).toEqual({ width: 100, height: 200 });
     expect(() => downscaledDimensions(0, 100)).toThrow();
+  });
+});
+describe('reviewer judgments', () => {
+  it('derives the answer key from the claim tone and expected page', () => {
+    expect(expectedRelation({ tone: 'supported', expectedPageId: 'a' }, 'a')).toBe('supports');
+    expect(expectedRelation({ tone: 'misleading', expectedPageId: 'a' }, 'a')).toBe('contradicts');
+    expect(expectedRelation({ tone: 'supported', expectedPageId: 'a' }, 'b')).toBe('not-enough-info');
+    expect(expectedRelation({ tone: 'contested', expectedPageId: 'a' }, 'a')).toBeNull();
+    expect(expectedRelation({ tone: 'supported' }, 'a')).toBeNull();
+  });
+  it('keeps one judgment per claim and page, newest first', () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v), removeItem: (k: string) => store.delete(k) });
+    const base = { claimId: 'c', claimText: 'claim', pageTitle: 'page', score: 0.5 };
+    appendAudit({ ...base, pageId: 'p1', decision: 'supports' });
+    appendAudit({ ...base, pageId: 'p2', decision: 'not-enough-info' });
+    const log = appendAudit({ ...base, pageId: 'p1', decision: 'contradicts' });
+    expect(log).toHaveLength(2);
+    const calls = judgmentsFor(log, 'c', 'claim');
+    expect(calls.get('p1')).toBe('contradicts');
+    expect(calls.get('p2')).toBe('not-enough-info');
+    expect(judgmentsFor(log, 'custom', 'claim').size).toBe(0);
   });
 });
 it('audit persistence remains usable when storage throws', () => {

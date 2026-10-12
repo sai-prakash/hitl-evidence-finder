@@ -25,14 +25,17 @@
 .card img { width: 100%; aspect-ratio: 4/3; object-fit: contain; background: var(--bg-soft); border-radius: 8px; }
 .card h3 { margin: 8px 0 2px; font-size: 15px; } .card p { margin: 0; font-size: 13px; color: var(--text-muted); }
 .card.hit { border-color: var(--accent); }
-.score { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--accent); font-size: 13px; }
+.score { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--accent); font-size: 13px; white-space: nowrap; }
 .results { display: grid; gap: 10px; }
-.result { display: grid; grid-template-columns: 120px 1fr auto; gap: 14px; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
+.result { display: grid; grid-template-columns: 120px 1fr auto; gap: 14px; align-items: start; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
 .result img { width: 120px; aspect-ratio: 4/3; object-fit: contain; background: var(--bg-soft); border-radius: 8px; }
 .result h3 { margin: 0 0 2px; font-size: 15px; } .result p { margin: 0; font-size: 13px; color: var(--text-muted); }
 .note { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
 .tag { display: inline-block; font-size: 11px; border: 1px solid var(--border-strong); border-radius: 99px; padding: 1px 8px; color: var(--text-muted); margin-left: 6px; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.pass { color: var(--success); font-weight: 600; } .fail { color: var(--danger); font-weight: 600; }
+.claim { font-size: 17px; line-height: 1.45; margin: 0 0 4px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--bg-elevated); border-radius: 0 10px 10px 0; }
+.result mark { background: rgba(91, 140, 255, 0.28); color: var(--text); border-radius: 3px; padding: 0 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.judge { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.judge .chip { font-size: 13px; padding: 4px 12px; }
+.result p.agree { color: var(--success); margin-top: 6px; } .result p.differ { color: #f5c26b; margin-top: 6px; }
 footer { margin-top: 40px; font-size: 12px; color: var(--text-dim); }
-@media (max-width: 600px) { .result { grid-template-columns: 80px 1fr; } .result img { width: 80px; } }
+@media (max-width: 600px) { .result { grid-template-columns: 80px 1fr; } .result img { width: 80px; } .result .score { grid-column: 2; } }

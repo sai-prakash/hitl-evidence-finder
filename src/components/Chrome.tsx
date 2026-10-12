@@ -35,7 +35,7 @@ export function Header(props: { title: string; line: string; repo: string }) {
         <p className="lede">{props.line}</p>
       </div>
       <nav className="hdr-links">
-        <a href={CASE_STUDY}>Case study</a>
+        <a href={CASE_STUDY} title="One case study covers this demo and its two sister demos">Case study (3 demos)</a>
         <a href={`https://github.com/sai-prakash/${props.repo}`}>GitHub</a>
       </nav>
     </header>
@@ -45,13 +45,16 @@ export function Header(props: { title: string; line: string; repo: string }) {
 export function PrivacyNote() {
   return (
     <p className="privacy">
-      <strong>Privacy:</strong> nothing you type or upload leaves your browser. The examples are
+      <strong>Privacy:</strong> nothing you type leaves your browser. The examples are
       precomputed; the live model runs on your device and there is no server.
     </p>
   );
 }
 
-// TODO(orchestrator): measure text-only model transfer sizes after downloading model files.
+// Text-only model files (vision encoder skipped). GPU: q4f16 weights. CPU: q8 weights plus the self-hosted ONNX Runtime WASM.
+const DOWNLOAD_GPU = 'about 190 MB';
+const DOWNLOAD_CPU = 'about 360 MB';
+
 export type LiveState =
   | { kind: 'idle' }
   | { kind: 'loading'; progress: EmbedderProgress | null; step?: string }
@@ -77,8 +80,9 @@ export function LivePanel(props: {
           </button>
           <p className="muted small">
             {gpu === false
-              ? "No GPU found, so it will run on your CPU. It's slower but it works."
-              : 'Uses your GPU if available. Cached by your browser for next time.'}
+              ? `No GPU found, so it will run on your CPU (${DOWNLOAD_CPU}). It's slower but it works.`
+              : `Uses your GPU if available (${DOWNLOAD_GPU}, or ${DOWNLOAD_CPU} if it falls back to your CPU).`}{' '}
+            Your browser caches the files, so later visits skip the download.
           </p>
         </>
       )}
@@ -116,6 +120,7 @@ export function LivePanel(props: {
   );
 }
 
-export function pct(n: number) {
-  return `${(n * 100).toFixed(1)}%`;
+/** Raw cosine similarity, not a percentage: it is not a confidence score. */
+export function similarity(n: number) {
+  return n.toFixed(2);
 }
