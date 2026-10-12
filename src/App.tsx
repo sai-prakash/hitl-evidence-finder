@@ -1,395 +1,150 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import './App.css';
-import {
-  appendAudit,
-  clearAuditLog,
-  formatAuditTime,
-  loadAuditLog,
-  type AuditEntry,
-} from './lib/audit';
-import {
-  MODEL_ID,
-  loadEmbedder,
-  type EmbedderProgress,
-} from './lib/embedder';
-import { CLAIMS, EVIDENCE_PAGES, type Claim } from './lib/samples';
-import {
-  buildIndex,
-  findEvidenceForClaim,
-  type EvidenceHit,
-} from './lib/search';
+import { Header, LivePanel, PrivacyNote, pct, type LiveState } from './components/Chrome';
+import { friendlyError, loadEmbedder, MODEL_ID } from './lib/embedder';
+import { CLAIMS, EVIDENCE_PAGES } from './lib/samples';
+import { findEvidenceForClaim, loadPages, pageById, type EvidenceHit } from './lib/search';
+import { appendAudit, clearAuditLog, formatAuditTime, loadAuditLog, type AuditEntry } from './lib/audit';
+import examplesData from './data/examples.json';
 
-type Phase = 'boot' | 'model' | 'index' | 'ready' | 'error';
+type Current = { claimId: string | null; text: string; hits: EvidenceHit[]; source: 'example' | 'live' };
 
-function formatBytes(n?: number): string {
-  if (!n || n <= 0) return '';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+function exampleFor(claimId: string): Current {
+  const c = CLAIMS.find((x) => x.id === claimId)!;
+  const ex = examplesData.examples.find((e) => e.claimId === claimId)!;
+  return { claimId, text: c.text, source: 'example', hits: ex.results.map((r) => ({ page: pageById(r.id), score: r.score })) };
 }
 
-function toneLabel(tone: Claim['tone']): string {
-  if (tone === 'supported') return 'likely supported';
-  if (tone === 'misleading') return 'likely misleading';
-  return 'contested';
-}
+const TONE_LABEL = { supported: 'supported', contested: 'contested', misleading: 'misleading' } as const;
 
 export default function App() {
-  const [phase, setPhase] = useState<Phase>('boot');
-  const [progress, setProgress] = useState<EmbedderProgress | null>(null);
-  const [indexProgress, setIndexProgress] = useState({
-    done: 0,
-    total: EVIDENCE_PAGES.length,
-    label: '',
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [deviceLabel, setDeviceLabel] = useState('');
-  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
-  const [hits, setHits] = useState<EvidenceHit[] | null>(null);
-  const [activeHitId, setActiveHitId] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [audit, setAudit] = useState<AuditEntry[]>([]);
-  const booted = useRef(false);
+  const [live, setLive] = useState<LiveState>({ kind: 'idle' });
+  const [cur, setCur] = useState<Current>(() => exampleFor(CLAIMS[0]!.id));
+  const [showKey, setShowKey] = useState(false);
+  const [own, setOwn] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [log, setLog] = useState<AuditEntry[]>(() => loadAuditLog());
+  const ready = live.kind === 'ready';
+  const claim = CLAIMS.find((c) => c.id === cur.claimId);
+  const top = cur.hits[0];
 
-  useEffect(() => {
-    setAudit(loadAuditLog());
-  }, []);
-
-  useEffect(() => {
-    if (booted.current) return;
-    booted.current = true;
-
-    (async () => {
-      try {
-        setPhase('model');
-        const info = await loadEmbedder((p) => setProgress(p));
-        setDeviceLabel(
-          `${info.device} · ${info.dtype} · ${info.vision ? 'text+vision' : 'text-only'}`,
-        );
-        setPhase('index');
-        await buildIndex((done, total, label) => {
-          setIndexProgress({ done, total, label });
-        });
-        setPhase('ready');
-      } catch (err) {
-        console.error(err);
-        setError(err instanceof Error ? err.message : String(err));
-        setPhase('error');
-      }
-    })();
-  }, []);
-
-  const progressPct = useMemo(() => {
-    if (phase === 'model') {
-      return Math.min(100, Math.max(0, progress?.progress ?? 0));
-    }
-    if (phase === 'index') {
-      return (indexProgress.done / Math.max(1, indexProgress.total)) * 100;
-    }
-    return phase === 'ready' ? 100 : 0;
-  }, [phase, progress, indexProgress]);
-
-  const selectedClaim = CLAIMS.find((c) => c.id === selectedClaimId) ?? null;
-  const activeHit =
-    hits?.find((h) => h.id === activeHitId) ?? hits?.[0] ?? null;
-
-  const runClaimSearch = useCallback(async (claim: Claim) => {
-    setSelectedClaimId(claim.id);
-    setSearching(true);
-    setError(null);
+  const startLive = async () => {
+    setLive({ kind: 'loading', progress: null });
     try {
-      const results = await findEvidenceForClaim(claim.text, 3);
-      setHits(results);
-      setActiveHitId(results[0]?.id ?? null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setHits(null);
-      setActiveHitId(null);
-    } finally {
-      setSearching(false);
+      await loadPages();
+      const info = await loadEmbedder((p) => setLive({ kind: 'loading', progress: p }));
+      setLive({ kind: 'ready', device: info.device === 'webgpu' ? 'GPU' : 'CPU' });
+    } catch (e) {
+      console.error(e);
+      setLive({ kind: 'error', message: friendlyError(e) });
     }
-  }, []);
+  };
 
-  const recordDecision = useCallback(
-    (decision: 'confirm' | 'reject') => {
-      if (!selectedClaim || !activeHit) return;
-      const next = appendAudit({
-        claimId: selectedClaim.id,
-        claimText: selectedClaim.text,
-        pageId: activeHit.id,
-        pageTitle: activeHit.title,
-        score: activeHit.score,
-        decision,
-      });
-      setAudit(next);
-    },
-    [selectedClaim, activeHit],
-  );
+  const checkOwn = async () => {
+    if (!own.trim()) return;
+    setBusy(true);
+    try {
+      const hits = await findEvidenceForClaim(own);
+      setCur({ claimId: null, text: own.trim(), hits, source: 'live' });
+      setShowKey(false);
+      setErr(null);
+    } catch (e) {
+      setErr(friendlyError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const statusText =
-    phase === 'boot'
-      ? 'Starting…'
-      : phase === 'model'
-        ? `Downloading ${MODEL_ID}`
-        : phase === 'index'
-          ? `Indexing ${indexProgress.label || 'pages'} (${indexProgress.done}/${indexProgress.total})`
-          : phase === 'ready'
-            ? 'Ready'
-            : 'Failed to load';
+  const decide = (decision: 'confirm' | 'reject') => {
+    if (!top) return;
+    setLog(appendAudit({ claimId: cur.claimId ?? 'custom', claimText: cur.text, pageId: top.page.id, pageTitle: top.page.title, score: top.score, decision }));
+  };
 
   return (
-    <div className="app">
-      <header className="hero">
-        <div className="hero-top">
-          <div>
-            <div className="eyebrow">
-              <span className="eyebrow-dot" />
-              human-in-the-loop · on-device embeddings
-            </div>
-            <h1>HITL Evidence Finder</h1>
-            <p className="subtitle">
-              Click an AI claim to retrieve the nearest PDF page image and text
-              excerpt from a shared embedding space. Confirm or reject matches
-              to build a local audit trail — all in your browser.
-            </p>
-          </div>
-          <aside className="privacy">
-            <strong>Privacy</strong>
-            <div>
-              Model download caches in your browser. Embeddings, rankings, and
-              the confirm/reject log never leave this tab (audit log stays in
-              localStorage).
-            </div>
-          </aside>
-        </div>
-        <div className="chips">
-          {[
-            'React',
-            'TypeScript',
-            'Transformers.js',
-            'WebGPU',
-            'EmbeddingGemma',
-            'HITL',
-          ].map((chip) => (
-            <span className="chip" key={chip}>
-              {chip}
-            </span>
-          ))}
-        </div>
-      </header>
+    <div className="page">
+      <Header
+        title="Evidence Finder"
+        line="For people reviewing AI-written claims: pick a claim, see which source page backs it up, then confirm or reject it yourself."
+        repo="hitl-evidence-finder"
+      />
+      <PrivacyNote />
 
-      {(phase !== 'ready' || error) && (
-        <section className="panel status-panel">
-          {phase !== 'ready' && phase !== 'error' && (
-            <div className="status">
-              <div className="status-title">
-                <span>{statusText}</span>
-                <span>{Math.round(progressPct)}%</span>
-              </div>
-              <div className="bar">
-                <span style={{ width: `${progressPct}%` }} />
-              </div>
-              <div className="meta">
-                {phase === 'model' && (
-                  <>
-                    {progress?.file ? `${progress.file} · ` : ''}
-                    {formatBytes(progress?.loaded)}
-                    {progress?.total ? ` / ${formatBytes(progress.total)}` : ''}
-                  </>
-                )}
-                {phase === 'index' &&
-                  'Embedding PDF page passages (and images when vision loads) locally…'}
-              </div>
-            </div>
-          )}
-          {phase === 'error' && (
-            <div className="status">
-              <div className="status-title">
-                <span style={{ color: 'var(--danger)' }}>Load failed</span>
-              </div>
-              <div className="meta">{error}</div>
-            </div>
-          )}
-          {phase === 'ready' && error && (
-            <div className="status">
-              <div className="status-title">
-                <span style={{ color: 'var(--danger)' }}>Search error</span>
-              </div>
-              <div className="meta">{error}</div>
-            </div>
-          )}
-        </section>
-      )}
-
-      <div className="workspace">
-        <section className="panel claims-panel">
-          <div className="panel-head">
-            <h2>AI claims</h2>
-            <span>{CLAIMS.length} sample claims</span>
-          </div>
-          <ul className="claim-list">
-            {CLAIMS.map((claim) => {
-              const active = claim.id === selectedClaimId;
-              return (
-                <li key={claim.id}>
-                  <button
-                    type="button"
-                    className={`claim-btn${active ? ' active' : ''}`}
-                    disabled={phase !== 'ready' || searching}
-                    onClick={() => void runClaimSearch(claim)}
-                  >
-                    <span className={`tone tone-${claim.tone}`}>
-                      {toneLabel(claim.tone)}
-                    </span>
-                    <span className="claim-text">{claim.text}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="hint">
-            Model: <code>{MODEL_ID}</code>
-            {deviceLabel ? ` · ${deviceLabel}` : ''}
-          </p>
-        </section>
-
-        <section className="panel evidence-panel">
-          <div className="panel-head">
-            <h2>Evidence rail</h2>
-            <span>
-              {searching
-                ? 'Searching…'
-                : hits
-                  ? `${hits.length} nearest pages`
-                  : 'Select a claim'}
-            </span>
-          </div>
-
-          {!hits && (
-            <div className="empty">
-              Pick a claim on the left. EmbeddingGemma ranks the demo PDF corpus
-              by cosine similarity in a shared space.
-            </div>
-          )}
-
-          {hits && (
-            <div className="evidence-layout">
-              <div className="hit-list">
-                {hits.map((hit, i) => (
-                  <button
-                    type="button"
-                    key={hit.id}
-                    className={`hit-card${hit.id === activeHit?.id ? ' active' : ''}`}
-                    onClick={() => setActiveHitId(hit.id)}
-                  >
-                    <div className="hit-top">
-                      <span className="rank">#{i + 1}</span>
-                      <span className="score">{(hit.score * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="hit-title">{hit.title}</div>
-                    <div className="hit-meta">
-                      {hit.sourceLabel} · p.{hit.pageNumber} · {hit.match}
-                    </div>
-                    <p className="hit-excerpt">{hit.excerpt}</p>
-                  </button>
-                ))}
-              </div>
-
-              {activeHit && (
-                <div className="page-preview">
-                  <div className="page-frame">
-                    <img
-                      src={activeHit.src}
-                      alt={activeHit.title}
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="page-actions">
-                    <div>
-                      <div className="page-actions-title">HITL decision</div>
-                      <div className="meta">
-                        Does this page support the selected claim?
-                      </div>
-                    </div>
-                    <div className="actions">
-                      <button
-                        type="button"
-                        className="btn btn-success"
-                        disabled={!selectedClaim}
-                        onClick={() => recordDecision('confirm')}
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger"
-                        disabled={!selectedClaim}
-                        onClick={() => recordDecision('reject')}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+      <h2 className="section-title">1. Pick a claim (instant, no download)</h2>
+      <div className="chips" data-testid="examples">
+        {CLAIMS.map((c) => (
+          <button key={c.id} className="chip" aria-pressed={cur.claimId === c.id} onClick={() => { setCur(exampleFor(c.id)); setShowKey(false); }}>
+            {c.text}
+          </button>
+        ))}
       </div>
 
-      <section className="panel audit-panel">
-        <div className="panel-head">
-          <h2>Audit trail</h2>
-          <div className="audit-actions">
-            <span>{audit.length} entries · local only</span>
-            {audit.length > 0 && (
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => {
-                  clearAuditLog();
-                  setAudit([]);
-                }}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-        {audit.length === 0 ? (
-          <div className="empty compact">
-            Confirm or reject a match to append a decision here.
-          </div>
-        ) : (
-          <ul className="audit-list">
-            {audit.map((entry) => (
-              <li key={entry.id} className={`audit-item decision-${entry.decision}`}>
-                <div className="audit-badge">{entry.decision}</div>
-                <div className="audit-body">
-                  <div className="audit-claim">{entry.claimText}</div>
-                  <div className="audit-meta">
-                    → {entry.pageTitle} · {(entry.score * 100).toFixed(1)}% ·{' '}
-                    {formatAuditTime(entry.at)}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <LivePanel state={live} onStart={startLive} readyText="Write your own claim below." />
+      <div className="row">
+        <input type="text" data-testid="query" value={own} disabled={!ready} onChange={(e) => setOwn(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && void checkOwn()}
+          placeholder={ready ? 'Type a claim to check against the pages' : 'Load the model above to check your own claim'} />
+        <button className="btn" disabled={!ready || busy} onClick={() => void checkOwn()}>{busy ? 'Checking…' : 'Find evidence'}</button>
+      </div>
+      {err && <p className="err small" role="alert">{err}</p>}
 
-      <footer className="footer">
-        <span>
-          Built for portfolio use · Apache-2.0 · embeddings via Transformers.js
-        </span>
-        <a
-          href="https://github.com/sai-prakash/hitl-evidence-finder"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub
-        </a>
-      </footer>
+      <h2 className="section-title">2. Evidence for: "{cur.text}"</h2>
+      <div className="results" data-testid="results">
+        {cur.hits.map((h, i) => (
+          <div className="result" key={h.page.id}>
+            <img src={h.page.src} alt="" />
+            <div>
+              <h3>{i === 0 ? 'Best match: ' : ''}{h.page.title} <span className="tag">page {h.page.pageNumber}</span></h3>
+              <p>{h.page.excerpt}</p>
+            </div>
+            <span className="score">{pct(h.score)}</span>
+          </div>
+        ))}
+      </div>
+      <p className="note">
+        {cur.source === 'example' ? 'Precomputed by running the model at build time.' : 'Computed just now in your browser.'}{' '}
+        The model only finds the most relevant page. It doesn't judge whether the claim is true. That's your call.
+      </p>
+
+      <h2 className="section-title">3. Your decision</h2>
+      <div className="row">
+        <button className="btn" onClick={() => decide('confirm')}>Page supports the claim</button>
+        <button className="btn" onClick={() => decide('reject')}>Page contradicts it / not enough</button>
+        {claim && (
+          <button className="btn" onClick={() => setShowKey((v) => !v)}>
+            {showKey ? 'Hide answer key' : 'Show answer key'}
+          </button>
+        )}
+      </div>
+      {claim && showKey && (
+        <p className="note">Answer key (written by the demo author when the claim was made up): <strong>{TONE_LABEL[claim.tone]}</strong>.</p>
+      )}
+      {log.length > 0 && (
+        <>
+          <h2 className="section-title">Review log (stored only in this browser)</h2>
+          <div className="results small">
+            {log.slice(0, 8).map((e) => (
+              <div key={e.id} className="muted">
+                {formatAuditTime(e.at)} · {e.decision === 'confirm' ? 'Supported' : 'Rejected'} · {e.claimText.slice(0, 80)} → {e.pageTitle}
+              </div>
+            ))}
+          </div>
+          <div className="row"><button className="btn" onClick={() => { clearAuditLog(); setLog([]); }}>Clear log</button></div>
+        </>
+      )}
+
+      <h2 className="section-title">The source pages ({EVIDENCE_PAGES.length})</h2>
+      <p className="note">Three short report pages written for this demo (not real publications), rendered as page images. The model searches both their text and the page image.</p>
+      <div className="grid" data-testid="library">
+        {EVIDENCE_PAGES.map((p) => (
+          <div className={`card${top?.page.id === p.id ? ' hit' : ''}`} key={p.id}>
+            <img src={p.src} alt={p.title} loading="lazy" />
+            <h3>{p.title}</h3>
+            <p>{p.sourceLabel} · page {p.pageNumber}</p>
+          </div>
+        ))}
+      </div>
+      <footer>Model: {MODEL_ID} via Transformers.js. Apache-2.0.</footer>
     </div>
   );
 }
